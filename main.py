@@ -1,4 +1,6 @@
 import os
+
+from sklearn import svm
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import sys
 import seaborn as sns
@@ -87,7 +89,7 @@ def train_mlp(X_train, y_train, X_test, y_test, input_size, hidden_size, num_cla
         
         # 创建混淆矩阵
         conf_matrix = confusion_matrix(y_test.cpu().numpy(), predicted.cpu().numpy())
-        target_names = [str(i) for i in range(num_classes)]
+        target_names = [str(i + 1) for i in range(num_classes)]
         
         # 绘制混淆矩阵
         plt.figure(figsize=(10, 8))
@@ -101,6 +103,58 @@ def train_mlp(X_train, y_train, X_test, y_test, input_size, hidden_size, num_cla
         print(f'Final Kappa: {kappa:.4f}')
     
     return model
+
+def evaluate_mlp(model, X, ground_truth):
+    # 评估模型
+    model.eval()  # 设置模型为评估模式
+    
+    with torch.no_grad():
+        outputs = model(X)
+        _, predicted = torch.max(outputs.data, 1)  # 获取预测值
+        
+        
+        # 绘制预测结果, 将ground_truth和predicted_labels绘制在一个图片中
+        predicted_labels = predicted.cpu().numpy()
+        plot_results(predicted_labels,ground_truth,'RPNet+MLP')
+def plot_results(predicted_labels,ground_truth,model_name):
+    # reshape predicted_labels
+        predicted_labels = predicted_labels.reshape(ground_truth.shape)
+        # 定义颜色调色板
+        palette = np.array([
+            [216, 191, 216],
+            [0, 255, 0],
+            [0, 255, 255],
+            [45, 138, 86],
+            [255, 0, 255],
+            [255, 165, 0],
+            [159, 31, 239],
+            [255, 0, 0],
+            [255, 255, 0]
+        ])
+
+        # 将颜色转换为范围 [0, 1] 之间的浮点数
+        palette = palette / 255.0
+
+        # 创建自定义颜色映射
+        cmap_custom = ListedColormap(palette)
+        plt.figure(figsize=(10, 5))
+
+        # 绘制真实标签
+        plt.subplot(1, 2, 1)
+        plt.title('Ground Truth')
+        plt.imshow(ground_truth, cmap='jet')
+        plt.colorbar()
+
+        # 绘制预测标签
+        plt.subplot(1, 2, 2)
+        plt.title('Predicted Labels')
+        plt.imshow(predicted_labels, cmap=cmap_custom)
+        plt.colorbar()
+
+        plt.tight_layout()
+        plt.savefig(f'{model_name}_comparison.png')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Land Cover Classification')
     parser.add_argument('--dataset', type=str, default='paviaU', help='dataset name (default: paviaU)')
@@ -157,55 +211,36 @@ if __name__ == '__main__':
     
     # 训练MLP模型
     model = train_mlp(X_train, y_train, X_test, y_test, input_size, hidden_size, num_classes, epochs=100, learning_rate=1e-3)
+    X = torch.from_numpy(RPNet_feature_map.numpy().reshape(-1, RPNet_feature_map.size(2))).float().to(device)
+    evaluate_mlp(model, X, ground_truth)
     # Save model
     torch.save(model.state_dict(), f'RPNet_MLP_{args.dataset}.pth')
     print('Model saved')
-    # 评估模型
-    model.eval()  # 设置模型为评估模式
-    X = torch.from_numpy(RPNet_feature_map.numpy().reshape(-1, RPNet_feature_map.size(2))).float().to(device)
-    with torch.no_grad():
-        outputs = model(X)
-        _, predicted = torch.max(outputs.data, 1)  # 获取预测值
-        
-        
-        # 绘制预测结果, 将ground_truth和predicted_labels绘制在一个图片中
-        predicted_labels = predicted.cpu().numpy()
-        # reshape predicted_labels
-        predicted_labels = predicted_labels.reshape(ground_truth.shape)
-        # 定义颜色调色板
-        palette = np.array([
-            [216, 191, 216],
-            [0, 255, 0],
-            [0, 255, 255],
-            [45, 138, 86],
-            [255, 0, 255],
-            [255, 165, 0],
-            [159, 31, 239],
-            [255, 0, 0],
-            [255, 255, 0]
-        ])
-
-        # 将颜色转换为范围 [0, 1] 之间的浮点数
-        palette = palette / 255.0
-
-        # 创建自定义颜色映射
-        cmap_custom = ListedColormap(palette)
-        plt.figure(figsize=(10, 5))
-
-        # 绘制真实标签
-        plt.subplot(1, 2, 1)
-        plt.title('Ground Truth')
-        plt.imshow(ground_truth, cmap='jet')
-        plt.colorbar()
-
-        # 绘制预测标签
-        plt.subplot(1, 2, 2)
-        plt.title('Predicted Labels')
-        plt.imshow(predicted_labels, cmap=cmap_custom)
-        plt.colorbar()
-
-        plt.tight_layout()
-        plt.savefig('comparison.png')
     
+    #使用svm 分类
+    clf = svm.SVC(kernel='rbf', C=1, gamma='scale')
+    clf.fit(X_train, y_train)
+    predicted = clf.predict(X_test)
+    
+    # 使用分类报告和绘制混淆矩阵
+    print(classification_report(y_test, predicted))
+    
+    # 创建混淆矩阵
+    conf_matrix = confusion_matrix(y_test, predicted)
+    target_names = [str(i + 1) for i in range(num_classes)]
+    
+    # 绘制混淆矩阵
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=target_names, yticklabels=target_names)
+    plt.xlabel('Predicted Label')
+    plt.ylabel('True Label')
+    plt.title('Confusion Matrix')
+    plt.savefig('svm_confusion_matrix.png')
+    
+    print(f'Final Accuracy: {accuracy_score(y_test, predicted) * 100:.2f}%')
+    print(f'Final Kappa: {cohen_kappa_score(y_test, predicted):.4f}')
+    predicted = clf.predict(X.cpu().numpy())
+    plot_results(predicted,ground_truth,'RPNet+SVM')
+
 
     
