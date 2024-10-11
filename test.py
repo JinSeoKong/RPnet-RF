@@ -16,7 +16,8 @@ import seaborn as sns
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Land Cover Classification')
     parser.add_argument('--dataset', type=str, default='paviaU', help='dataset name (default: paviaU)')
-    parser.add_argument('--layer_num', type=int, default=4, help='number of Random Patches layers (default: 4)')
+    parser.add_argument('--layer_num', type=int, default=6, help='number of Random Patches layers (default: 4)')
+    parser.add_argument('--num_components', type=int, default=8, help='number of PCA components (default: 8)')
     args = parser.parse_args()
 
     #load data
@@ -30,7 +31,7 @@ if __name__ == '__main__':
         print('Invalid dataset name')
 
     #pca whitening
-    num_components = 3
+    num_components = args.num_components
     data_pca = apply_PCA_Whitening(data, num_components)
     print('PCA Whitening done')
     print('PCA Whitened data shape:', data_pca.shape)
@@ -51,7 +52,7 @@ if __name__ == '__main__':
     # Flatten feature map for SVM input
     rpnet_features = RPNet_feature_map.numpy().reshape(-1, RPNet_feature_map.size(2))
     labels = ground_truth.flatten()
-
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Split data into train and test sets
     X_test = torch.from_numpy(rpnet_features).float().to(device)
@@ -59,7 +60,7 @@ if __name__ == '__main__':
     # MLP参数
     input_size = X_test.shape[1]   # 输入特征的大小
     hidden_size = 4096      # 隐藏层神经元个数
-    num_classes = len(np.unique(labels))  # 分类的类别数
+    num_classes = len(np.unique(labels)) - 1  # 分类的类别数
 
     
     model = MLP(input_size, hidden_size, num_classes).to(device)
@@ -69,8 +70,14 @@ if __name__ == '__main__':
     # 评估模型
     model.eval()  # 设置模型为评估模式
     with torch.no_grad():
-        outputs = model(X_test)
-        _, predicted = torch.max(outputs.data, 1)  # 获取预测值
+        outputs = torch.zeros_like(torch.from_numpy(labels))
+        for i in range(len(labels)):
+            if labels[i] != 0:
+                outputs[i] = torch.max( model(X_test[i]).data, 0)[1] + 1
+            else:
+                outputs[i] = 0
+        
+        predicted = outputs
         accuracy = accuracy_score(y_test.cpu().numpy(), predicted.cpu().numpy())
         kappa = cohen_kappa_score(y_test.cpu().numpy(), predicted.cpu().numpy())
         

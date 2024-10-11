@@ -1,3 +1,4 @@
+import numpy as np
 import torch.nn.functional as F
 from sklearn.decomposition import PCA
 from matplotlib import pyplot as plt
@@ -32,27 +33,36 @@ def Random_patches_layer(data, patch_size=3, num_patches=50,padding=10):
     
     # 获取数据的形状 (h, w, num_bands)
     h, w, num_bands = data.shape
-
-    # 将数据 reshape 为 (1, num_bands, h, w) -> 4D 张量
-    data = data.permute(2, 0, 1).unsqueeze(0)
+    data = data.permute(2,0,1).unsqueeze(0)
+    
 
     # 计算填充的高度和宽度
-    pad_h = (patch_size - h % patch_size) % patch_size
-    pad_w = (patch_size - w % patch_size) % patch_size
+    pad_h = patch_size
+    pad_w = patch_size
 
     # 镜像填充 (pad=(左, 右, 上, 下))
     # 仅在右和下进行填充
-    padded_data = F.pad(data, pad=(0, pad_w, 0, pad_h), mode='reflect')  # (左, 右, 上, 下)
-    print('Padded data shape:', padded_data.shape)
-    # 提取补丁 (unfold 将图像分成补丁)
-    all_patches = padded_data.unfold(2, patch_size, patch_size).unfold(3, patch_size, patch_size)
+    padded_data = F.pad(data, pad=(pad_w, pad_w, pad_h, pad_h), mode='reflect')  # (左, 右, 上, 下)
     
-    # 调整形状为 (num_patches, patch_size, patch_size, num_bands)
-    all_patches = all_patches.contiguous().view(-1, num_bands, patch_size, patch_size)
+    # 提取补丁 
+    patches = []
+    for _ in range(num_patches):
+        # 随机选择中心像素的坐标
+        center_y = np.random.randint(pad_h, h + pad_h)
+        center_x = np.random.randint(pad_w, w + pad_w)
+        # 获取补丁的边界
+        y_start = center_y - patch_size // 2
+        y_end = center_y + patch_size // 2 + 1
+        x_start = center_x - patch_size // 2
+        x_end = center_x + patch_size // 2 + 1
+
+        # 提取补丁并保存
+        patch = padded_data[:,:,y_start:y_end, x_start:x_end].squeeze(0)
+        patches.append(patch)
+    all_patches = torch.stack(patches)
     
-    # 从所有补丁中随机选择 num_patches 个
-    random_indices = torch.randint(0, all_patches.size(0), (num_patches,))
-    selected_patches = all_patches[random_indices]
+    print('All patches shape:', all_patches.shape)
+    selected_patches = all_patches
 
 
     conv_output = F.conv2d(data, selected_patches, padding=padding)
