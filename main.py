@@ -66,14 +66,32 @@ def train_mlp(X_train, y_train, X_test, y_test, input_size, hidden_size, num_cla
             print(f'Epoch [{epoch+1}/{epochs}], Train Loss: {train_loss_list[-1]:.4f}, Test Loss: {test_loss_list[-1]:.4f}, Test Accuracy: {test_accuracy * 100:.2f}%')
 
     # 绘制loss曲线
-    plt.figure(figsize=(10, 6))
-    plt.plot(range(epochs), train_loss_list, label='Train Loss')
-    plt.plot(range(epochs), test_loss_list, label='Test Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.legend()
-    plt.title('Training and Testing Loss')
-    plt.savefig('loss_curve.png')
+    # 创建图形和主轴
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+
+    # 绘制训练损失和测试损失
+    color = 'tab:blue'
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('Loss (log scale)', color=color)
+    ax1.plot(range(epochs), train_loss_list, label='Train Loss', color=color)
+    ax1.plot(range(epochs), test_loss_list, label='Test Loss', color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+    ax1.set_yscale('log')  # 设置 y 轴为对数间距
+
+    # 创建次轴用于绘制测试准确率
+    ax2 = ax1.twinx()
+    color = 'tab:red'
+    ax2.set_ylabel('Test Accuracy', color=color)
+    ax2.plot(range(epochs), test_accuracy_list, label='Test Acc', color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
+
+    # 添加图例和标题
+    ax1.legend(loc='upper left')
+    ax2.legend(loc='lower left')
+    plt.title('Training and Testing Loss with Test Accuracy')
+
+    # 保存图像并显示
+    plt.savefig('./images/loss_and_acc_curve.png')
     plt.show()
 
     # 评估模型
@@ -97,7 +115,7 @@ def train_mlp(X_train, y_train, X_test, y_test, input_size, hidden_size, num_cla
         plt.xlabel('Predicted Label')
         plt.ylabel('True Label')
         plt.title('Confusion Matrix')
-        plt.savefig('confusion_matrix.png')
+        plt.savefig('./images/confusion_matrix.png')
         
         print(f'Final Accuracy: {accuracy * 100:.2f}%')
         print(f'Final Kappa: {kappa:.4f}')
@@ -137,12 +155,31 @@ def plot_results(predicted_labels,ground_truth,model_name):
 
         # 创建自定义颜色映射
         cmap_custom = ListedColormap(palette)
+
+        gt_palette = np.array([
+            [0,0,0],
+            [216, 191, 216],
+            [0, 255, 0],
+            [0, 255, 255],
+            [45, 138, 86],
+            [255, 0, 255],
+            [255, 165, 0],
+            [159, 31, 239],
+            [255, 0, 0],
+            [255, 255, 0]
+        ])
+
+        # 将颜色转换为范围 [0, 1] 之间的浮点数
+        gt_palette = gt_palette / 255.0
+
+        # 创建自定义颜色映射
+        gt_cmap_custom = ListedColormap(gt_palette)
         plt.figure(figsize=(10, 5))
 
         # 绘制真实标签
         plt.subplot(1, 2, 1)
         plt.title('Ground Truth')
-        plt.imshow(ground_truth, cmap='jet')
+        plt.imshow(ground_truth, cmap=gt_cmap_custom)
         plt.colorbar()
 
         # 绘制预测标签
@@ -152,7 +189,7 @@ def plot_results(predicted_labels,ground_truth,model_name):
         plt.colorbar()
 
         plt.tight_layout()
-        plt.savefig(f'{model_name}_comparison.png')
+        plt.savefig(f'./images/{model_name}_comparison.png')
 
 
 if __name__ == '__main__':
@@ -218,7 +255,7 @@ if __name__ == '__main__':
     print('Model saved')
     
     #使用svm 分类
-    clf = svm.SVC(kernel='rbf', C=1, gamma='scale')
+    clf = svm.SVC(kernel='rbf', C=1024, gamma='scale')
     clf.fit(X_train, y_train)
     predicted = clf.predict(X_test)
     
@@ -235,7 +272,7 @@ if __name__ == '__main__':
     plt.xlabel('Predicted Label')
     plt.ylabel('True Label')
     plt.title('Confusion Matrix')
-    plt.savefig('svm_confusion_matrix.png')
+    plt.savefig('./images/svm_confusion_matrix.png')
     
     print(f'Final Accuracy: {accuracy_score(y_test, predicted) * 100:.2f}%')
     print(f'Final Kappa: {cohen_kappa_score(y_test, predicted):.4f}')
