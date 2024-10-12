@@ -1,5 +1,4 @@
 import os
-
 from sklearn import svm
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import sys
@@ -73,8 +72,8 @@ def train_mlp(X_train, y_train, X_test, y_test, input_size, hidden_size, num_cla
     color = 'tab:blue'
     ax1.set_xlabel('Epoch')
     ax1.set_ylabel('Loss (log scale)', color=color)
-    ax1.plot(range(epochs), train_loss_list, label='Train Loss', color=color)
-    ax1.plot(range(epochs), test_loss_list, label='Test Loss', color=color)
+    ax1.plot(range(epochs), train_loss_list, label='Train Loss', color='tab:blue')
+    ax1.plot(range(epochs), test_loss_list, label='Test Loss', color='tab:green')
     ax1.tick_params(axis='y', labelcolor=color)
     ax1.set_yscale('log')  # 设置 y 轴为对数间距
 
