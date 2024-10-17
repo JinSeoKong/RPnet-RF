@@ -90,7 +90,7 @@ def train_mlp(X_train, y_train, X_test, y_test, input_size, hidden_size, num_cla
     plt.title('Training and Testing Loss with Test Accuracy')
 
     # 保存图像并显示
-    plt.savefig('./images/loss_and_acc_curve.png')
+    plt.savefig(r"C:\Users\PC\Desktop\hs_ai\cluster_segmentation\PaviaU\loss_and_acc_curve.png')
     plt.show()
 
     # 评估模型
@@ -114,7 +114,7 @@ def train_mlp(X_train, y_train, X_test, y_test, input_size, hidden_size, num_cla
         plt.xlabel('Predicted Label')
         plt.ylabel('True Label')
         plt.title('Confusion Matrix')
-        plt.savefig('./images/confusion_matrix.png')
+        plt.savefig(r"C:\Users\PC\Desktop\hs_ai\cluster_segmentation\PaviaU\confusion_matrix.png')
         
         print(f'Final Accuracy: {accuracy * 100:.2f}%')
         print(f'Final Kappa: {kappa:.4f}')
