@@ -200,8 +200,8 @@ if __name__ == '__main__':
 
     #load data
     if args.dataset == 'paviaU':
-        data = sio.loadmat('/home/user_3/game6_land_cover_classification/datasets/paviaU/paviaU.mat')['paviaU']  # Replace with your file path
-        ground_truth= sio.loadmat('/home/user_3/game6_land_cover_classification/datasets/paviaU/paviaU_gt.mat')['paviaU_gt'] # Replace with your file path
+        data = sio.loadmat(r"C:\Users\PC\Desktop\hs_ai\cluster_segmentation\PaviaU\PaviaU.mat")['paviaU']  # Replace with your file path
+        ground_truth= sio.loadmat(r"C:\Users\PC\Desktop\hs_ai\cluster_segmentation\PaviaU\PaviaU_gt.mat")['paviaU_gt'] # Replace with your file path
         print('Data loaded for PaviaU dataset')
         print('Data shape:', data.shape)
         print('Ground truth shape:', ground_truth.shape)
@@ -271,7 +271,7 @@ if __name__ == '__main__':
     plt.xlabel('Predicted Label')
     plt.ylabel('True Label')
     plt.title('Confusion Matrix')
-    plt.savefig('./images/svm_confusion_matrix.png')
+    plt.savefig(r"C:\Users\PC\Desktop\hs_ai\cluster_segmentation\PaviaU\svm_confusion_matrix.png')
     
     print(f'Final Accuracy: {accuracy_score(y_test, predicted) * 100:.2f}%')
     print(f'Final Kappa: {cohen_kappa_score(y_test, predicted):.4f}')
