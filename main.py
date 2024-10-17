@@ -271,7 +271,7 @@ if __name__ == '__main__':
     plt.xlabel('Predicted Label')
     plt.ylabel('True Label')
     plt.title('Confusion Matrix')
-    plt.savefig(r"C:\Users\PC\Desktop\hs_ai\cluster_segmentation\PaviaU\svm_confusion_matrix.png')
+    plt.savefig(r"C:\Users\PC\Desktop\hs_ai\cluster_segmentation\PaviaU\svm_confusion_matrix.png")
     
     print(f'Final Accuracy: {accuracy_score(y_test, predicted) * 100:.2f}%')
     print(f'Final Kappa: {cohen_kappa_score(y_test, predicted):.4f}')
